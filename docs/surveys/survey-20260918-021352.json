@@ -1,0 +1,302 @@
+{
+  "timestamp": "2026-09-18T02:13:52",
+  "label": "代理B",
+  "summary": {
+    "total": 29,
+    "ok": 17,
+    "auth": 2,
+    "fail": 10
+  },
+  "results": [
+    {
+      "key": "bkg",
+      "label": "德国 BKG",
+      "category": "精密产品",
+      "note": "IGS 官方数据中心，免账号",
+      "reachable": true,
+      "status": "ok",
+      "latency_ms": 2445,
+      "detail": "正常（HTTP 206）"
+    },
+    {
+      "key": "cddis",
+      "label": "NASA CDDIS（美国）",
+      "category": "精密产品",
+      "note": "IGS 主数据中心，需 Earthdata 账号",
+      "reachable": false,
+      "status": "fail",
+      "latency_ms": 2558,
+      "detail": "代理设置有问题（ProxyError）—— 检查代理地址填对了没"
+    },
+    {
+      "key": "ign",
+      "label": "法国 IGN",
+      "category": "精密产品",
+      "note": "欧洲 IGS 数据中心",
+      "reachable": false,
+      "status": "fail",
+      "latency_ms": 2557,
+      "detail": "SSL 证书问题（SSLError）—— 可能是代理拦截了 HTTPS"
+    },
+    {
+      "key": "whu",
+      "label": "武汉大学 IGS",
+      "category": "精密产品",
+      "note": "国内 IGS 数据中心（若可用，国内用户无需代理）",
+      "reachable": false,
+      "status": "fail",
+      "latency_ms": 352,
+      "detail": "异常状态码 HTTP 502"
+    },
+    {
+      "key": "whu_https",
+      "label": "武汉大学 IGS（https）",
+      "category": "精密产品",
+      "note": "",
+      "reachable": false,
+      "status": "fail",
+      "latency_ms": 355,
+      "detail": "SSL 证书问题（SSLError）—— 可能是代理拦截了 HTTPS"
+    },
+    {
+      "key": "igs_org",
+      "label": "IGS 官方分发点",
+      "category": "精密产品",
+      "note": "IGS 官方分发点",
+      "reachable": true,
+      "status": "ok",
+      "latency_ms": 894,
+      "detail": "正常（HTTP 206）"
+    },
+    {
+      "key": "nrcan",
+      "label": "加拿大 NRCan",
+      "category": "精密产品",
+      "note": "加拿大自然资源部（目录页）",
+      "reachable": false,
+      "status": "fail",
+      "latency_ms": 2553,
+      "detail": "SSL 证书问题（SSLError）—— 可能是代理拦截了 HTTPS"
+    },
+    {
+      "key": "pecny",
+      "label": "捷克 Pecný",
+      "category": "精密产品",
+      "note": "捷克大地测量观测台（目录页）",
+      "reachable": true,
+      "status": "ok",
+      "latency_ms": 1915,
+      "detail": "可达（HTTP 404，路径可能不对）"
+    },
+    {
+      "key": "aiub",
+      "label": "瑞士伯尔尼 AIUB",
+      "category": "精密产品",
+      "note": "伯尔尼大学天文研究所（目录页）",
+      "reachable": false,
+      "status": "fail",
+      "latency_ms": 2205,
+      "detail": "SSL 证书问题（SSLError）—— 可能是代理拦截了 HTTPS"
+    },
+    {
+      "key": "esa",
+      "label": "欧洲空间局 GSSC",
+      "category": "精密产品",
+      "note": "ESA 导航支持中心（首页）",
+      "reachable": true,
+      "status": "ok",
+      "latency_ms": 1579,
+      "detail": "可达（HTTP 200）"
+    },
+    {
+      "key": "gsi_jp",
+      "label": "日本国土地理院",
+      "category": "精密产品",
+      "note": "日本 GSI（首页）",
+      "reachable": true,
+      "status": "ok",
+      "latency_ms": 630,
+      "detail": "可达（HTTP 200）"
+    },
+    {
+      "key": "noaa_ngs",
+      "label": "NOAA/NGS（美国）",
+      "category": "精密产品",
+      "note": "美国大地测量局（首页）",
+      "reachable": false,
+      "status": "fail",
+      "latency_ms": 1029,
+      "detail": "SSL 证书问题（SSLError）—— 可能是代理拦截了 HTTPS"
+    },
+    {
+      "key": "sopac",
+      "label": "美国 SOPAC",
+      "category": "精密产品",
+      "note": "加州大学圣地亚哥分校（首页）",
+      "reachable": false,
+      "status": "fail",
+      "latency_ms": 636,
+      "detail": "SSL 证书问题（SSLError）—— 可能是代理拦截了 HTTPS"
+    },
+    {
+      "key": "unavco",
+      "label": "UNAVCO/EarthScope",
+      "category": "精密产品",
+      "note": "美国地球科学观测网（首页）",
+      "reachable": false,
+      "status": "fail",
+      "latency_ms": 621,
+      "detail": "代理设置有问题（ProxyError）—— 检查代理地址填对了没"
+    },
+    {
+      "key": "ga_gnss",
+      "label": "澳大利亚 GA（GNSS 门户）",
+      "category": "精密产品",
+      "note": "Geoscience Australia（首页）",
+      "reachable": false,
+      "status": "fail",
+      "latency_ms": 111,
+      "detail": "SSL 证书问题（SSLError）—— 可能是代理拦截了 HTTPS"
+    },
+    {
+      "key": "ga_api",
+      "label": "澳大利亚 GA（数据 API）",
+      "category": "观测数据",
+      "note": "免账号，返回 JSON 含预签名下载地址",
+      "reachable": true,
+      "status": "ok",
+      "latency_ms": 2023,
+      "detail": "正常（HTTP 206）"
+    },
+    {
+      "key": "cddis_data",
+      "label": "NASA CDDIS（观测数据）",
+      "category": "观测数据",
+      "note": "全球 IGS 测站",
+      "reachable": false,
+      "status": "auth",
+      "latency_ms": 2647,
+      "detail": "需要登录（返回了 Earthdata 登录页，不是数据）"
+    },
+    {
+      "key": "bkg_obs",
+      "label": "德国 BKG（观测数据）",
+      "category": "观测数据",
+      "note": "欧洲测站（目录页）",
+      "reachable": true,
+      "status": "ok",
+      "latency_ms": 1040,
+      "detail": "可达（HTTP 200）"
+    },
+    {
+      "key": "peanpod",
+      "label": "Ginan 官方 S3（悉尼）",
+      "category": "模型文件",
+      "note": "⚠️ 全部 34 个 tables/ 都在这里，也是官方脚本指向的地方",
+      "reachable": true,
+      "status": "ok",
+      "latency_ms": 782,
+      "detail": "正常（HTTP 206）"
+    },
+    {
+      "key": "iers",
+      "label": "IERS 地球定向参数",
+      "category": "模型文件",
+      "note": "ERP 备选来源（目录页）",
+      "reachable": true,
+      "status": "ok",
+      "latency_ms": 1775,
+      "detail": "可达（HTTP 400，路径可能不对）"
+    },
+    {
+      "key": "vmf",
+      "label": "TU Wien 对流层格网",
+      "category": "模型文件",
+      "note": "VMF3 对流层产品（目录页）",
+      "reachable": true,
+      "status": "ok",
+      "latency_ms": 1171,
+      "detail": "可达（HTTP 200）"
+    },
+    {
+      "key": "ncei",
+      "label": "NOAA NCEI（地磁模型）",
+      "category": "模型文件",
+      "note": "IGRF 地磁系数（目录页）",
+      "reachable": true,
+      "status": "ok",
+      "latency_ms": 1959,
+      "detail": "可达（HTTP 200）"
+    },
+    {
+      "key": "icgem",
+      "label": "ICGEM 重力场模型",
+      "category": "模型文件",
+      "note": "EGM2008 等（首页）",
+      "reachable": true,
+      "status": "ok",
+      "latency_ms": 3723,
+      "detail": "可达（HTTP 200）"
+    },
+    {
+      "key": "jpl",
+      "label": "JPL 行星历表",
+      "category": "模型文件",
+      "note": "DE430/DE436（⚠️ GPL-3，不可打包分发）",
+      "reachable": true,
+      "status": "ok",
+      "latency_ms": 884,
+      "detail": "可达（HTTP 200）"
+    },
+    {
+      "key": "onsala",
+      "label": "瑞典 Onsala（海潮负荷）",
+      "category": "模型文件",
+      "note": "OLOAD/ALOAD BLQ 文件（目录页）",
+      "reachable": true,
+      "status": "ok",
+      "latency_ms": 1371,
+      "detail": "可达（HTTP 200）"
+    },
+    {
+      "key": "github",
+      "label": "GitHub",
+      "category": "基准",
+      "note": "",
+      "reachable": true,
+      "status": "ok",
+      "latency_ms": 281,
+      "detail": "可达（HTTP 200）"
+    },
+    {
+      "key": "apache",
+      "label": "Apache 官网",
+      "category": "基准",
+      "note": "",
+      "reachable": true,
+      "status": "ok",
+      "latency_ms": 219,
+      "detail": "可达（HTTP 200）"
+    },
+    {
+      "key": "deepseek",
+      "label": "DeepSeek API",
+      "category": "基准",
+      "note": "",
+      "reachable": false,
+      "status": "auth",
+      "latency_ms": 327,
+      "detail": "可达但需认证（HTTP 401）"
+    },
+    {
+      "key": "baidu",
+      "label": "百度（国内基准）",
+      "category": "基准",
+      "note": "",
+      "reachable": true,
+      "status": "ok",
+      "latency_ms": 430,
+      "detail": "可达（HTTP 200）"
+    }
+  ]
+}
