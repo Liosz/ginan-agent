@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ginan Agent</title>
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+<!-- =====================================================================
+     token 由服务端注入。
+     本地应用没必要搞复杂的握手 —— 页面本身就是服务端生成的，
+     直接把 token 写进去最简单。
+     这个 meta 标签后面被 app.js 读走，用于所有 API 调用。
+     ===================================================================== -->
+<meta name="ginan-token" content="__TOKEN__">
+
+<div class="app">
+
+  <!-- ================= 顶栏：状态栏 ================= -->
+  <!--
+    ⚠️ 这里**没有主题切换按钮** —— 整套界面只有深色一套。
+       原来有个按钮在深/浅之间切，但浅色那套是同一份 Tailwind 默认色板
+       换了个明度，两套都"大众化"。与其维护两套平庸的，不如把力气
+       全花在一套上。**一个确定的样子，不要一堆选择。**
+
+    ⚠️ 中间那块读数是**真的在走**（见 clock.js），不是装饰：
+       程序内部一直用 GPS 周说话（BKG_PRODUCTS_FROM_WEEK=2238 之类），
+       把当前周号摆在页头，用户看到"周 2238"时才有参照。
+  -->
+  <header class="topbar">
+    <div class="brand">
+      <!-- 准星。九个 <svg> 都**不带 fill/stroke 属性** —— 全靠 .logo / .icon
+           两条 CSS 规则供给（fill:none; stroke:currentColor）。
+           重写样式表时删掉那两条，这一屏图标全变成黑色实心块。 -->
+      <svg class="logo" viewBox="0 0 24 24" aria-hidden="true">
+        <circle class="logo-ring" cx="12" cy="12" r="9.5" stroke-dasharray="2.5 3.5"/>
+        <circle class="logo-core" cx="12" cy="12" r="3"/>
+        <path d="M12 .5v4M12 19.5v4M.5 12h4M19.5 12h4"/>
+      </svg>
+      <div>
+        <h1>Ginan Agent</h1>
+        <p class="tagline">AI 驱动的 GNSS 精密定位工作台</p>
+      </div>
+    </div>
+
+    <div class="clock" id="clock">
+      <span class="clock-k">UTC</span>
+      <span class="clock-v clock-date" data-clock="date">----------</span>
+      <span class="clock-v" data-clock="time">--:--:--</span>
+      <span class="clock-sep"></span>
+      <span class="clock-k">GPS</span>
+      <span class="clock-v" data-clock="week">----.-</span>
+    </div>
+
+    <div class="topbar-actions">
+      <button id="btn-refresh" class="btn btn-ghost" title="重新检查环境与网络">
+        <svg viewBox="0 0 24 24" class="icon"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>
+        重新检查
+      </button>
+      <!-- 「新任务」—— 清空对话和任务状态，但保留已下载的数据。
+           ⚠️ 按钮文案用「新任务」而不是「清空」：
+              "清空"听起来像要删东西（用户会担心数据没了），
+              "新任务"准确描述了行为，而且和用户心里的说法一致 ——
+              他说的是"我想做新计算"。 -->
+      <button id="btn-newtask" class="btn btn-ghost" title="清空对话和任务状态，开始新的一次计算（已下载的数据会保留）">
+        <svg viewBox="0 0 24 24" class="icon"><path d="M12 5v14M5 12h14"/></svg>
+        新任务
+      </button>
+      <button id="btn-settings" class="btn btn-ghost" title="设置">
+        <svg viewBox="0 0 24 24" class="icon"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6h.09A1.65 1.65 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        设置
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= 侧栏：系统状态 ================= -->
+  <aside class="sidebar">
+
+    <!-- ================= 结果 =================
+      ⚠️ 放在**最上面**：跑完之后，结果就是用户最要看的东西。
+         没跑之前它是一条安静的占位说明，不占地方也不吓人。
+
+      ⚠️⚠️ 侧栏只放**结论和数字**，图在**全屏视图**里（见文件末尾的 #fig-view）。
+         踩过：一开始把折线画在这个 232 px 宽的格子里 —— 挤成一条
+         看不出任何东西的线。科学作图要的误差棒、置信带、缩放、
+         hover 读数，在侧栏那个尺寸里全都施展不开。
+
+      ⚠️ 为什么图**不塞进对话**：对话是**模型说的**（可以错、可以含糊），
+         而图是**从产物直接画出来的**（确定性数据，不经过模型）。
+         两样东西的可信度不一样，混在一起用户就分不清哪个是"算出来的"。
+    -->
+    <section class="panel panel-result" id="panel-result">
+      <div class="panel-head">
+        <h2>结果</h2>
+        <span class="pill" id="result-pill">还没跑</span>
+      </div>
+      <div id="result-body">
+        <p class="panel-foot" id="result-note">还没有结果 —— 跑一次处理就有了。</p>
+      </div>
+    </section>
+
+    <!-- 环境检查 -->
+    <section class="panel" id="panel-env">
+      <div class="panel-head">
+        <h2>运行环境</h2>
+        <span class="pill" id="env-verdict">检查中…</span>
+      </div>
+      <ul class="checklist" id="env-list">
+        <li class="skeleton-row"></li>
+        <li class="skeleton-row"></li>
+        <li class="skeleton-row"></li>
+      </ul>
+    </section>
+
+    <!-- 网络体检 -->
+    <section class="panel" id="panel-net">
+      <div class="panel-head">
+        <h2>数据源</h2>
+        <span class="pill" id="net-verdict">检查中…</span>
+      </div>
+      <ul class="checklist" id="net-list">
+        <li class="skeleton-row"></li>
+        <li class="skeleton-row"></li>
+      </ul>
+      <p class="panel-foot" id="proxy-note"></p>
+    </section>
+
+    <!-- ================= 收件箱 —— 第四条取数路径 ================= -->
+    <!--
+      ⚠️ 这一块之前和环境检查里的"收件箱"条目**重复了**，已经合并到这里。
+         一个东西只该有一个地方显示 —— 两处都显示，用户会疑惑
+         "哪个是真的、以哪个为准"。
+
+      ⚠️ 按钮不是锦上添花：那个路径长得没法手打
+         （C:\Users\...\AppData\Local\GinanAgent\inbox），
+         让用户自己去找等于这条路走不通。
+    -->
+    <section class="panel panel-quiet" id="panel-inbox">
+      <div class="panel-head">
+        <h2>收件箱</h2>
+        <span class="pill" id="inbox-pill">—</span>
+      </div>
+
+      <p class="hint">
+        数据无法自动下载时，可<b>自行获取文件</b>并放入此目录，
+        程序会识别并归置到正确位置。
+        <br><br>
+        <span class="hint-dim">
+          可通过浏览器下载、从其他设备拷贝或网盘同步。
+          文件名不影响识别 —— 程序依据<b>文件内容</b>判断类型。
+        </span>
+      </p>
+
+      <div class="inbox-actions">
+        <button class="btn" id="btn-open-inbox" title="在文件管理器里打开这个目录">
+          <svg viewBox="0 0 24 24" class="icon"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>
+          打开文件夹
+        </button>
+        <button class="btn btn-primary hidden" id="btn-claim-inbox">
+          认领
+        </button>
+      </div>
+
+      <ul class="checklist" id="inbox-list"></ul>
+      <code class="path" id="inbox-path">—</code>
+    </section>
+
+  </aside>
+
+  <!-- ================= 主区：对话 ================= -->
+  <main class="main">
+    <div class="messages" id="messages">
+      <!-- ⚠️ 空状态只能在这里定义：app.js 把它 .remove() 掉之后**从不重建**，
+           一律靠 location.reload() 回到这里。删掉这个 div，点「新任务」
+           就再也回不到起手卡片了。 -->
+      <div class="empty" id="empty">
+        <div class="empty-inner">
+          <h2>待命</h2>
+          <p class="empty-sub">用自然语言描述你的目标。不需要预先掌握 GNSS 术语。</p>
+          <!-- 三条指令的索引。
+               ⚠️ 只有这些按钮是**代用户发言**的 —— 所以每个 data-say
+                  必须是用户真会说的那种话，不能替他选定测站和日期。
+                  见 check_ui_text.py §⑩。 -->
+          <div class="cards" id="starter-cards">
+            <button class="card" data-say="检查一下我的环境能不能跑 Ginan">
+              <span class="card-n">01</span>
+              <span class="card-t">检查环境</span>
+              <span class="card-d">确认运行依赖是否齐备</span>
+              <span class="card-go"></span>
+            </button>
+            <button class="card" data-say="测试一下现在有哪些数据源能连上">
+              <span class="card-n">02</span>
+              <span class="card-t">测试网络</span>
+              <span class="card-d">检查各数据源的连通情况</span>
+              <span class="card-go"></span>
+            </button>
+            <!-- ⚠️⚠️ 这张卡片的 `data-say` 原来写死了一句话：
+                 "帮我看看 ALIC 站 2026 年 9 月 2 日需要下载哪些数据"
+
+                 两个问题，都是用户点出来的：
+
+                 ① **它替用户说了他没说过的话。** 测站和日期是写死在
+                    界面里的常量 —— 用户点一下，就等于声称"我要 ALIC 的
+                    9 月 2 日"。而他只是想"准备一下我的数据"。
+
+                 ② **它和卡片的名字不是一回事。** 卡片叫「准备数据」，
+                    用户的理解是"看看我有什么、还缺什么"（他的原话：
+                    "点准备数据应该是检查我收件箱有什么数据并且给我建议"），
+                    而这句话让 agent 直接去查环境 + 做取数计划。
+
+                 👉 现在它说的是**用户真的想说的那件事**：看收件箱、给建议。 -->
+            <button class="card" data-say="看看我收件箱里有什么数据，告诉我能算什么、还缺什么">
+              <span class="card-n">03</span>
+              <span class="card-t">准备数据</span>
+              <span class="card-d">检查收件箱里的数据，给出建议</span>
+              <span class="card-go"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 输入区 -->
+    <div class="composer">
+      <div class="composer-inner">
+        <textarea id="input" rows="1"
+          placeholder="描述你的需求…（Enter 发送，Shift+Enter 换行）"></textarea>
+        <button id="btn-send" class="btn btn-primary" title="发送">
+          <svg viewBox="0 0 24 24" class="icon"><path d="M4 12h15M13 6l6 6-6 6"/></svg>
+        </button>
+        <button id="btn-stop" class="btn btn-danger hidden" title="停止">
+          <svg viewBox="0 0 24 24" class="icon"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+        </button>
+      </div>
+      <p class="composer-hint" id="composer-hint"></p>
+    </div>
+  </main>
+
+</div>
+
+<!-- ================= 设置弹窗 ================= -->
+<div class="modal-backdrop hidden" id="settings-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="modal-head">
+      <h2 id="settings-title">设置</h2>
+      <button class="btn btn-icon" id="settings-close" title="关闭">
+        <svg viewBox="0 0 24 24" class="icon"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- ---------- AI 模型 ---------- -->
+      <section class="form-section">
+        <h3>AI 模型</h3>
+        <p class="form-help">
+          程序需要调用 AI 模型来理解你的需求。
+          <b>推荐使用 DeepSeek</b> —— 国内可直连，并提供免费额度。
+          密钥仅保存在本机，不会上传。
+        </p>
+
+        <label class="field">
+          <span class="field-label">服务商</span>
+          <select id="f-provider"></select>
+          <span class="field-note" id="provider-note"></span>
+        </label>
+
+        <label class="field">
+          <span class="field-label">服务地址</span>
+          <input id="f-baseurl" type="text" placeholder="https://api.deepseek.com">
+        </label>
+
+        <label class="field">
+          <span class="field-label">API 密钥</span>
+          <div class="field-row">
+            <input id="f-apikey" type="password" placeholder="粘贴你的密钥" autocomplete="off">
+            <a id="f-signup" class="btn btn-ghost hidden" target="_blank" rel="noopener">前往注册</a>
+          </div>
+          <span class="field-note" id="key-note"></span>
+        </label>
+
+        <label class="field">
+          <span class="field-label">模型</span>
+          <div class="field-row">
+            <select id="f-model"></select>
+            <button class="btn" id="btn-fetch-models" title="从服务商获取可用模型列表">
+              获取列表
+            </button>
+          </div>
+          <span class="field-note" id="model-note">
+            列表是从服务商那里现查的，不是写死的 —— 模型名变化很快。
+          </span>
+        </label>
+
+        <label class="field">
+          <span class="field-label">或手动填写模型名称</span>
+          <input id="f-model-manual" type="text" placeholder="例如 deepseek-flash">
+        </label>
+      </section>
+
+      <!-- ---------- 网络 ---------- -->
+      <section class="form-section">
+        <h3>网络</h3>
+        <p class="form-help">
+          部分数据源位于境外，<b>无法连接时通常需要启用代理</b>。
+          侧栏的「数据源」会显示具体哪些不可用。
+        </p>
+
+        <label class="field">
+          <span class="field-label">代理模式</span>
+          <select id="f-proxymode">
+            <option value="auto">跟随系统设置（推荐）</option>
+            <option value="manual">手动指定代理地址</option>
+            <option value="none">直连（不使用代理）</option>
+          </select>
+          <span class="field-note">
+            用全局代理 / TUN 模式的话选第一个就够了，下面两项不用填。
+          </span>
+        </label>
+
+        <div id="proxy-manual" class="hidden">
+          <label class="field">
+            <span class="field-label">代理地址</span>
+            <input id="f-proxyhttp" type="text" placeholder="http://127.0.0.1:7890">
+            <span class="field-note">http 与 https 通常使用同一地址，填写其一即可。</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- ---------- CDDIS 账号 ---------- -->
+      <section class="form-section">
+        <h3>CDDIS 账号<span class="optional">可选</span></h3>
+        <p class="form-help">
+          若侧栏提示 <b>NASA CDDIS 需要登录</b>，在此填写。
+          CDDIS 提供 IGS 的精密产品（轨道、钟差、天线文件）。
+          <b>多数情况下无需配置</b> —— 德国 BKG 提供相同产品且无需账号。
+          仅当需要最新、最完整的产品时才需要注册。
+        </p>
+
+        <label class="field">
+          <span class="field-label">用户名</span>
+          <input id="f-cddis-user" type="text" autocomplete="username"
+                 placeholder="Earthdata 用户名">
+          <span class="field-note">
+            ⚠️ 通常<b>不是邮箱</b>，而是注册时填写的用户名。
+          </span>
+        </label>
+
+        <label class="field">
+          <span class="field-label">密码</span>
+          <input id="f-cddis-pass" type="password" autocomplete="current-password"
+                 placeholder="留空表示不改">
+        </label>
+
+        <div class="field">
+          <div class="field-row">
+            <button class="btn" id="btn-save-cddis">保存并验证</button>
+            <a class="btn btn-ghost" id="cddis-signup" target="_blank" rel="noopener">
+              去注册（免费）
+            </a>
+          </div>
+          <span class="field-note" id="cddis-status"></span>
+        </div>
+      </section>
+
+      <!-- ================= 解算改正项 =================
+        ⚠️ 这一块**不是**"高级选项" —— 每一项都值几厘米到几十厘米
+           （实测数字见 `ginan/corrections.py` 里每一项的 effect；
+            有的量过、没量过的会**明说没量过**，不许含糊）。
+
+        ⚠️ 列表**由服务端给**（`/api/corrections`）：名字、说明、要哪个文件、
+           文件多大、开没开，全在一处。前端**不写死**这些 ——
+           写死了就是两份清单，而两份清单一定会漂。
+
+        ⚠️ 默认值来自**处理档位**，这里改的是"覆盖档位的那几项"。
+           所以有一行「恢复默认」，改乱了能一键回到档位的样子。
+      -->
+      <h3>解算改正<span class="optional">潮汐 / 电离层</span></h3>
+      <p class="field-note" id="corr-intro">
+        这几项是物理改正，逐项决定算不算。默认跟着处理档位走；改了就成了
+        你自己的选择（会覆盖档位）。<b>算得多不等于算得准</b> ——
+        每一项旁边的数字是实测出来的影响。
+      </p>
+      <div class="corr-list" id="corr-list">
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row"></div>
+      </div>
+      <div class="field">
+        <div class="field-row">
+          <button class="btn btn-ghost" id="corr-reset">全部恢复默认</button>
+        </div>
+        <span class="field-note" id="corr-status"></span>
+      </div>
+
+      <p class="form-foot" id="config-path"></p>
+    </div>
+
+    <div class="modal-foot">
+      <span class="save-status" id="save-status"></span>
+      <button class="btn" id="settings-cancel">取消</button>
+      <button class="btn btn-primary" id="settings-save">保存</button>
+    </div>
+  </div>
+</div>
+
+  <!-- ================= 大图视图 =================
+    ⚠️ 为什么是一个**全屏浮层**、而不是嵌在侧栏或对话里：
+       科学作图要的东西（误差棒、置信带、rangeslider 缩放、hover 读数、
+       导出 PNG）在 232 px 宽的侧栏里全都施展不开 ——
+       挤出来的是一条看不出任何东西的线。
+
+    ⚠️ 它是 `hidden` 的，且**不预先创建 plotly 图** ——
+       图只在用户点「看图」时才渲染（每张图几十 KB 的 JSON + 一次布局计算）。
+       没人看图的时候不花这份钱。
+  -->
+  <div class="fig-view hidden" id="fig-view">
+    <div class="fig-card">
+      <div class="fig-head">
+        <div class="fig-title">
+          <h3 id="fig-station">结果</h3>
+          <span class="pill" id="fig-headline-pill"></span>
+        </div>
+        <div class="fig-actions">
+          <button class="btn btn-ghost" id="fig-export">导出 PNG</button>
+          <button class="btn btn-ghost" id="fig-close">关闭</button>
+        </div>
+      </div>
+      <p class="fig-headline" id="fig-headline"></p>
+      <div class="fig-tabs" id="fig-tabs"></div>
+      <div class="fig-body" id="fig-body"></div>
+      <p class="fig-foot" id="fig-foot"></p>
+    </div>
+  </div>
+
+<script src="/static/plotly.min.js"></script>
+<script src="/static/markdown.js"></script>
+<script src="/static/clock.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
