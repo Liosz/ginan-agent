@@ -1,0 +1,93 @@
+# =============================================================================
+# 换行符规则
+# =============================================================================
+#
+# ⚠️ 这不是"风格问题"，而是**跨平台能不能跑**的问题。
+#
+# 背景：Windows 用 CRLF 表示换行，Linux/macOS 用 LF。
+#      git 默认会在检出时自动转换（core.autocrlf），
+#      于是**在 Windows 上看起来正常的 .sh 文件，到了 Linux 上会报**：
+#
+#          bash: ./run.sh: /bin/bash^M: bad interpreter: No such file or directory
+#
+#      那个 `^M` 就是多出来的 \r。用户看到这行报错完全不知道是什么意思。
+#
+#      而且这个 bug **在 Windows 上永远复现不了** —— 只有 Linux 用户会撞上，
+#      而他们多半会直接放弃，而不是来报 issue。
+#
+# 所以：**明确指定**每种文件该用什么换行，不依赖 git 的默认行为。
+
+# ---- 必须是 LF 的 ----
+#
+# .sh 脚本：CRLF 会让 Linux 报 bad interpreter
+*.sh        text eol=lf
+*.bash      text eol=lf
+
+# Python：CRLF 本身能跑，但混用会导致 diff 噪音和工具报错
+*.py        text eol=lf
+
+# YAML / JSON / Markdown：同上，纯文本统一用 LF
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.json      text eol=lf
+*.md        text eol=lf
+*.txt       text eol=lf
+*.toml      text eol=lf
+*.cfg       text eol=lf
+*.ini       text eol=lf
+
+# 前端资源
+*.js        text eol=lf
+*.mjs       text eol=lf
+*.css       text eol=lf
+*.html      text eol=lf
+
+# ---- 必须是 CRLF 的 ----
+#
+# ⚠️ .bat 用 LF 会在某些 Windows 环境下出问题
+#    （尤其是带 goto / call 的批处理，LF 会让标签跳转失效）。
+#
+#    这个问题很隐蔽：简单的 .bat 用 LF 也能跑，
+#    所以本地测没问题，直到某个有 goto 的脚本上线。
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+
+# ---- 二进制：不碰 ----
+#
+# ⚠️ 让 git 对二进制文件做"换行转换"会**直接损坏文件**。
+#    它会以为那是文本，把里面的 \r\n 或 \n 改掉。
+*.png       binary
+*.jpg       binary
+*.ico       binary
+*.gz        binary
+*.zip       binary
+*.exe       binary
+
+# ⚠️ 压缩 / 编码格式的**数据文件**，和 .gz 同一类。
+#
+#    2026-09-20 补：这两个原来**不在**这张表里，于是 git 用自动判断 ——
+#    而自动判断看的是"有没有 NUL 字节"，不是"这个格式是不是文本"。
+#
+#    实测它们**确实含有 CR 字节**，而那些 CR **不是换行，是数据本身**：
+#        tests/fixtures/igr21992.erp.Z   385 字节里有  3 个 CR
+#        tests/fixtures/bkg09997.sum.Z  5132 字节里有 24 个 CR
+#    一次 LF→CRLF 转换就会把它们**改坏**，而 `.Z` 解出来是错的。
+*.Z         binary
+*.Z.*       binary
+*.crx       binary
+
+# ---- 测试夹具：**一个字节都不能动** ----
+#
+# ⚠️ 夹具存在的全部意义就是"**真实的那些字节**"。
+#
+#    换行转换把它们改掉之后，测试**还是绿的** —— 那才是最糟的一种：
+#    **夹具不再真实，而没有任何东西会告诉你**。
+#    （这个仓库已经吃过一次同形状的亏：守卫的夹具写的是裸 RINEX，
+#      于是"收件箱里的 .gz"那条路一个守卫都没有。）
+#
+#    👉 所以夹具目录**整片**关掉文本转换，不逐个扩展名列 ——
+#       将来加什么格式的夹具都不用再想起来这里改一次。
+tests/fixtures/**  -text
+
+# 许可证文件的全文不该被改动
+LICENSE     -text
